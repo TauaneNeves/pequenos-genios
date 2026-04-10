@@ -5,141 +5,312 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const LISTA_ANIMAIS = [
-  { id: 1, nome: 'Cachorro', foto: '/images/animais/cachorro.png', cor: '#FFD166', frase: 'O cachorro é o melhor amigo e faz au au!', somReal: '/sounds/animais/cachorro-latido.mp3' },
-  { id: 2, nome: 'Gato', foto: '/images/animais/gato.png', cor: '#40C9FF', frase: 'O gatinho adora um carinho e faz miau!', somReal: '/sounds/animais/gato-miado.mp3' },
-  // ... outros animais seguindo o mesmo padrão
+  { 
+    id: 1, 
+    nome: 'Cachorro', 
+    silabas: [
+      { texto: 'Ca', som: 'cá', audioFile: '/sounds/professora/silabas/ca.mp3' }, 
+      { texto: 'chor', som: 'xô', audioFile: '/sounds/professora/silabas/cho.mp3' }, 
+      { texto: 'ro', som: 'rro', audioFile: '/sounds/professora/silabas/ro.mp3' }
+    ],
+    foto: '/images/animais/cachorro.png', 
+    cor: '#FFD166', 
+    somReal: '/sounds/animais/cachorro-latido.mp3',
+    audioResposta: '/sounds/professora/nomesanimais/cachorro.mp3'
+  },
+  { 
+    id: 2, 
+    nome: 'Gato', 
+    silabas: [
+      { texto: 'Ga', som: 'gá', audioFile: '/sounds/professora/silabas/ga.mp3' }, 
+      { texto: 'to', som: 'tô', audioFile: '/sounds/professora/silabas/to.mp3' }
+    ],
+    foto: '/images/animais/gato.png', 
+    cor: '#40C9FF', 
+    somReal: '/sounds/animais/gato-miado.mp3',
+    audioResposta: '/sounds/professora/nomesanimais/gato.mp3' 
+  },
+  { 
+    id: 3, 
+    nome: 'Cavalo', 
+    silabas: [
+      { texto: 'Ca', som: 'cá', audioFile: '/sounds/professora/silabas/ca.mp3' }, 
+      { texto: 'va', som: 'vá', audioFile: '/sounds/professora/silabas/va.mp3' }, 
+      { texto: 'lo', som: 'lô', audioFile: '/sounds/professora/silabas/lo.mp3' }
+    ],
+    foto: '/images/animais/cavalo.png', 
+    cor: '#A855F7', 
+    somReal: '/sounds/animais/cavalo-relincho.mp3',
+    audioResposta: '/sounds/professora/nomesanimais/cavalo.mp3'
+  }
 ];
 
 export default function SomDosBichos() {
-  const [animalSelecionado, setAnimalSelecionado] = useState<typeof LISTA_ANIMAIS[0] | null>(null);
+  const [rodando, setRodando] = useState(false);
+  const [animalAtual, setAnimalAtual] = useState<typeof LISTA_ANIMAIS[0] | null>(null);
+  const [etapa, setEtapa] = useState<'pergunta' | 'resposta'>('pergunta');
+  const [silabaAtiva, setSilabaAtiva] = useState<number>(-1);
+  
   const audioRealRef = useRef<HTMLAudioElement | null>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const isCancelledRef = useRef(false);
 
-  // FUNÇÃO PARA PARAR TUDO IMEDIATAMENTE (Som real e Voz)
   const pararTudo = useCallback(() => {
-    // Para a síntese de voz da professora
+    isCancelledRef.current = true;
     window.speechSynthesis.cancel();
-    
-    // Para o áudio real do animal
     if (audioRealRef.current) {
       audioRealRef.current.pause();
-      audioRealRef.current.currentTime = 0; // Reseta para o início
-      audioRealRef.current = null; // Limpa a referência
+      audioRealRef.current.currentTime = 0;
     }
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
   }, []);
 
-  // GARANTE QUE O SOM PARE AO SAIR DA PÁGINA
   useEffect(() => {
-    return () => pararTudo(); 
+    return () => pararTudo();
   }, [pararTudo]);
 
-  const tocarAtividade = (animal: typeof LISTA_ANIMAIS[0]) => {
-    pararTudo(); // Para o som anterior antes de começar o novo
+  const avancarParaProximo = (idxAtual: number) => {
+    if (isCancelledRef.current) return;
+    const proxIndex = idxAtual + 1;
+    
+    if (proxIndex < LISTA_ANIMAIS.length) {
+      tocarFluxo(proxIndex);
+    } else {
+      // ===== FIM DO JOGO: Toca a sua frase de comemoração =====
+      setRodando(false);
+      setAnimalAtual(null);
+      
+      const audioFim = new Audio('/sounds/professora/fim-do-jogo.mp3');
+      audioRealRef.current = audioFim;
 
-    // Toca o som real do bicho
-    const audio = new Audio(animal.somReal);
-    audioRealRef.current = audio;
-    audio.play().catch(e => console.log("Erro ao tocar áudio:", e));
+      audioFim.play().catch(() => {
+        // Fallback usando exatamente a sua frase se o arquivo não for encontrado
+        const msgFim = new SpeechSynthesisUtterance("Uau, parabéns! Você adivinhou todos os bichinhos! Que tal a gente brincar de novo?");
+        msgFim.lang = 'pt-BR';
+        window.speechSynthesis.speak(msgFim);
+      });
+    }
+  };
 
-    // Fala a frase educativa de forma amigável
-    const mensagem = new SpeechSynthesisUtterance(animal.frase);
-    mensagem.lang = 'pt-BR';
-    mensagem.rate = 0.8; 
-    mensagem.pitch = 1.3; 
-    window.speechSynthesis.speak(mensagem);
+  const falarSilabas = (animal: typeof LISTA_ANIMAIS[0], idxSorteio: number) => {
+    let index = 0;
 
-    // Abre o Modal com a foto grande
-    setAnimalSelecionado(animal);
+    const falarProxima = () => {
+      if (isCancelledRef.current) return;
+
+      if (index < animal.silabas.length) {
+        setSilabaAtiva(index);
+        const silaba = animal.silabas[index];
+
+        const proximoPasso = () => {
+          if (isCancelledRef.current) return;
+          index++;
+          const t = setTimeout(falarProxima, 600);
+          timeoutsRef.current.push(t);
+        };
+
+        if (silaba.audioFile !== '') {
+          const audio = new Audio(silaba.audioFile);
+          audioRealRef.current = audio;
+          
+          audio.play().then(() => {
+            audio.onended = proximoPasso;
+          }).catch((err) => {
+            const msg = new SpeechSynthesisUtterance(silaba.som);
+            msg.lang = 'pt-BR';
+            msg.rate = 0.5;
+            msg.onend = proximoPasso;
+            window.speechSynthesis.speak(msg);
+          });
+
+        } else {
+          const msg = new SpeechSynthesisUtterance(silaba.som);
+          msg.lang = 'pt-BR';
+          msg.rate = 0.5;
+          msg.onend = proximoPasso;
+          window.speechSynthesis.speak(msg);
+        }
+
+      } else {
+        const t1 = setTimeout(() => { if (!isCancelledRef.current) setSilabaAtiva(-1); }, 500);
+        const t2 = setTimeout(() => { if (!isCancelledRef.current) avancarParaProximo(idxSorteio); }, 2500);
+        timeoutsRef.current.push(t1, t2);
+      }
+    };
+
+    falarProxima();
+  };
+
+  const tocarFluxo = (idx: number) => {
+    pararTudo();
+    
+    setTimeout(() => {
+      isCancelledRef.current = false;
+      const animal = LISTA_ANIMAIS[idx];
+      setAnimalAtual(animal);
+      setEtapa('pergunta');
+      setSilabaAtiva(-1);
+
+      const iniciarSilabas = () => {
+        if (isCancelledRef.current) return;
+        falarSilabas(animal, idx);
+      };
+
+      const continuarParaNomeCompleto = () => {
+        if (isCancelledRef.current) return;
+        setEtapa('resposta');
+        
+        if (animal.audioResposta !== '') {
+          const audioResposta = new Audio(animal.audioResposta);
+          audioRealRef.current = audioResposta;
+
+          audioResposta.play().then(() => {
+            audioResposta.onended = iniciarSilabas;
+          }).catch(() => {
+            const msgRobo = new SpeechSynthesisUtterance(animal.nome);
+            msgRobo.lang = 'pt-BR';
+            msgRobo.onend = iniciarSilabas;
+            window.speechSynthesis.speak(msgRobo);
+          });
+        } else {
+          const msgRobo = new SpeechSynthesisUtterance(animal.nome);
+          msgRobo.lang = 'pt-BR';
+          msgRobo.onend = iniciarSilabas;
+          window.speechSynthesis.speak(msgRobo);
+        }
+      };
+
+      const continuarParaSomDoBicho = () => {
+        if (isCancelledRef.current) return;
+        const audioBicho = new Audio(animal.somReal);
+        audioRealRef.current = audioBicho;
+        
+        audioBicho.play().then(() => {
+           audioBicho.onended = continuarParaNomeCompleto;
+        }).catch(() => continuarParaNomeCompleto());
+      };
+
+      const audioPergunta = new Audio('/sounds/professora/qual-animal.mp3');
+      audioRealRef.current = audioPergunta;
+
+      audioPergunta.play().then(() => {
+        audioPergunta.onended = continuarParaSomDoBicho;
+      }).catch(() => {
+        const msgPergunta = new SpeechSynthesisUtterance("Você sabe que bicho é esse?");
+        msgPergunta.lang = 'pt-BR';
+        msgPergunta.rate = 0.9;
+        msgPergunta.onend = continuarParaSomDoBicho;
+        window.speechSynthesis.speak(msgPergunta);
+      });
+
+    }, 100);
+  };
+
+  const iniciarJogo = () => {
+    setRodando(true);
+    tocarFluxo(0); 
   };
 
   return (
-    <div style={{ width: "100%", minHeight: "100vh", backgroundColor: "#F0F9FF", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px", boxSizing: "border-box" }}>
+    <div style={{ width: "100%", height: "100vh", backgroundColor: "#F0F9FF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "15px", boxSizing: "border-box", position: "relative", overflow: "hidden" }}>
       
-      {/* BOTÃO VOLTAR */}
-      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "30px" }}>
-        <Link href="/playground?idade=2-3" onClick={pararTudo} style={{ textDecoration: "none", padding: "12px 24px", backgroundColor: "#FFFFFF", border: "4px solid #1E293B", borderRadius: "20px", color: "#1E293B", fontWeight: "900", boxShadow: "4px 4px 0px #1E293B" }}>
-          ⬅ VOLTAR
-        </Link>
-      </div>
+      <Link 
+        href="/playground?idade=2-3" 
+        onClick={pararTudo} 
+        style={{ position: "absolute", top: "15px", left: "15px", textDecoration: "none", padding: "10px 20px", backgroundColor: "#FFFFFF", border: "4px solid #1E293B", borderRadius: "15px", color: "#1E293B", fontWeight: "900", boxShadow: "4px 4px 0px #1E293B", zIndex: 100 }}
+      >
+        ⬅ VOLTAR
+      </Link>
 
-      <div style={{ textAlign: "center", marginBottom: "40px" }}>
-        <h1 style={{ fontSize: "clamp(32px, 5vw, 42px)", fontWeight: "900", color: "#1E293B", margin: "0" }}>Quem sou eu?</h1>
-        <p style={{ fontSize: "18px", color: "#64748B", fontWeight: "700" }}>Toque no animal para ver a foto e ouvir o som!</p>
-      </div>
+      {!rodando ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", animation: "aparecer 0.5s ease-out" }}>
+          <h1 style={{ fontSize: "clamp(32px, 6vw, 48px)", fontWeight: "900", color: "#1E293B", marginBottom: "30px", textAlign: "center" }}>Adivinhe o Animal!</h1>
+          
+          <div style={{ display: "flex", gap: "15px", marginBottom: "30px" }}>
+            {LISTA_ANIMAIS.map(animal => (
+              <div key={animal.id} style={{ width: "70px", height: "70px", borderRadius: "50%", border: "4px solid #1E293B", overflow: "hidden", position: "relative", backgroundColor: animal.cor }}>
+                <Image src={animal.foto} alt={animal.nome} fill style={{ objectFit: 'cover' }} />
+              </div>
+            ))}
+          </div>
 
-      {/* GRADE DE ANIMAIS RESPONSIVA */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "25px", width: "100%", maxWidth: "1000px" }}>
-        {LISTA_ANIMAIS.map((animal) => (
-          <button
-            key={animal.id}
-            onClick={() => tocarAtividade(animal)}
-            style={{
-              backgroundColor: "#FFFFFF",
-              border: "4px solid #1E293B",
-              borderRadius: "40px",
-              padding: "30px",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              boxShadow: "6px 6px 0px #1E293B",
-              transition: "transform 0.2s"
-            }}
-          >
+          <button onClick={iniciarJogo} style={{ backgroundColor: "#06D6A0", border: "6px solid #1E293B", borderRadius: "30px", padding: "20px 40px", cursor: "pointer", boxShadow: "6px 6px 0px #1E293B", display: "flex", flexDirection: "column", alignItems: "center", animation: "pulsar 1.5s infinite" }}>
+            <span style={{ fontSize: "60px", lineHeight: "1" }}>▶️</span>
+            <span style={{ fontSize: "28px", fontWeight: "900", color: "#1E293B", marginTop: "10px" }}>COMEÇAR</span>
+          </button>
+        </div>
+      ) : (
+        animalAtual && (
+          <div key={animalAtual.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", maxWidth: "800px", animation: "surgirLateral 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards" }}>
+            
+            <h1 style={{ 
+              fontSize: "clamp(28px, 6vw, 56px)", 
+              fontWeight: "900", 
+              color: "#1E293B", 
+              textAlign: "center", 
+              margin: "0 0 3vh 0", 
+              lineHeight: "1.1" 
+            }}>
+              Você sabe que bicho é esse?
+            </h1>
+
             <div style={{ 
-              marginBottom: "15px", 
-              backgroundColor: animal.cor, 
-              width: "140px", 
-              height: "140px", 
-              borderRadius: "50%", 
+              width: "min(35vh, 60vw, 350px)", 
+              aspectRatio: "1/1", 
+              backgroundColor: animalAtual.cor, 
+              borderRadius: "15%", 
+              border: "6px solid #1E293B", 
+              overflow: "hidden", 
+              position: "relative", 
+              boxShadow: "6px 6px 0px #1E293B" 
+            }}>
+              <Image src={animalAtual.foto} alt="Animal Oculto" fill style={{ objectFit: 'cover' }} />
+            </div>
+
+            <div style={{ 
+              minHeight: "10vh", 
+              marginTop: "4vh", 
               display: "flex", 
               justifyContent: "center", 
               alignItems: "center", 
-              border: "4px solid #1E293B",
-              overflow: "hidden",
-              position: "relative"
+              width: "100%" 
             }}>
-              {/* Foto miniatura no botão */}
-              <Image 
-                src={animal.foto} 
-                alt={animal.nome} 
-                fill 
-                style={{ objectFit: 'cover' }}
-              />
-            </div>
-            <span style={{ fontSize: "22px", fontWeight: "900", color: "#1E293B" }}>{animal.nome.toUpperCase()}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* JANELA DA FOTO (POP-UP) COM TRAVA DE SOM */}
-      {animalSelecionado && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(30, 41, 59, 0.95)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 100, padding: "15px" }}>
-          <div style={{ backgroundColor: "#FFFFFF", padding: "20px", borderRadius: "40px", border: "6px solid #1E293B", position: "relative", width: "100%", maxWidth: "550px", textAlign: "center" }}>
-            
-            {/* Botão X para fechar e PARA TUDO O SOM */}
-            <button 
-              onClick={() => { setAnimalSelecionado(null); pararTudo(); }}
-              style={{ position: "absolute", top: "-15px", right: "-15px", width: "50px", height: "50px", backgroundColor: "#FB7185", border: "4px solid #1E293B", borderRadius: "50%", color: "white", fontSize: "24px", fontWeight: "900", cursor: "pointer", boxShadow: "4px 4px 0px #1E293B", zIndex: 101 }}
-            >
-              X
-            </button>
-
-            {/* Foto grande do animal */}
-            <div style={{ width: "100%", aspectRatio: "1/1", backgroundColor: "#F1F5F9", borderRadius: "25px", border: "4px solid #E2E8F0", position: "relative", overflow: "hidden", marginBottom: "20px" }}>
-              <Image 
-                src={animalSelecionado.foto} 
-                alt={animalSelecionado.nome} 
-                fill 
-                style={{ objectFit: 'cover' }}
-              />
+              {etapa === 'resposta' && (
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+                  {animalAtual.silabas.map((silaba, index) => (
+                    <span 
+                      key={index}
+                      style={{ 
+                        fontSize: "clamp(24px, 5vw, 48px)", 
+                        fontWeight: "900", 
+                        padding: "10px 20px",
+                        backgroundColor: silabaAtiva === index ? "#EF4444" : "#FFFFFF",
+                        color: silabaAtiva === index ? "#FFFFFF" : "#1E293B",
+                        borderRadius: "15px", 
+                        border: "5px solid #1E293B",
+                        boxShadow: silabaAtiva === index ? "0px 0px 15px rgba(239, 68, 68, 0.8)" : "4px 4px 0px #1E293B",
+                        textTransform: "uppercase", 
+                        transition: "all 0.15s ease-out",
+                        transform: silabaAtiva === index ? "scale(1.1)" : "scale(1)"
+                      }}
+                    >
+                      {silaba.texto}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <h2 style={{ fontSize: "32px", fontWeight: "900", color: "#1E293B", margin: "0 0 10px 0" }}>{animalSelecionado.nome}!</h2>
-            <p style={{ fontSize: "20px", fontWeight: "700", color: "#64748B", margin: 0 }}>{animalSelecionado.frase}</p>
           </div>
-        </div>
+        )
       )}
 
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes pulsar { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes aparecer { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes surgirLateral { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+      `}} />
     </div>
   );
 }

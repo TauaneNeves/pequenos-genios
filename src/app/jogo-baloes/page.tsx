@@ -8,7 +8,6 @@ const CORES = ['#EF4444', '#3B82F6', '#22C55E', '#FDE047', '#A855F7', '#EC4899',
 
 // EFEITO DE ESTOURO REALISTA: Pedaços de borracha, fumaça de ar e queda livre
 const EstouroReal = ({ x, y, cor, letra }: { x: number; y: number; cor: string; letra: string }) => {
-  // Array para gerar os pedaços de borracha rasgada
   const pedacosBorracha = Array.from({ length: 8 });
 
   return (
@@ -35,14 +34,12 @@ const EstouroReal = ({ x, y, cor, letra }: { x: number; y: number; cor: string; 
 
       {/* 2. Pedaços da Borracha do Balão Voando */}
       {pedacosBorracha.map((_, i) => {
-        // Direção da explosão da borracha (360 graus)
         const angulo = (Math.random() * 360) * (Math.PI / 180);
-        const forcaVoo = Math.random() * 80 + 40; // O quão longe o pedaço voa
+        const forcaVoo = Math.random() * 80 + 40;
         const destinoX = Math.cos(angulo) * forcaVoo;
         const destinoY = Math.sin(angulo) * forcaVoo;
-        const rotacao = Math.random() * 360; // Gira no ar
+        const rotacao = Math.random() * 360;
 
-        // Recortes imitando borracha rasgada e esticada
         const formatosRasgados = [
           'polygon(0% 0%, 100% 20%, 80% 100%, 10% 80%)',
           'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
@@ -58,10 +55,10 @@ const EstouroReal = ({ x, y, cor, letra }: { x: number; y: number; cor: string; 
               position: 'absolute',
               top: '50%',
               left: '50%',
-              width: '35px', // Tamanho do pedaço de borracha
+              width: '35px',
               height: '35px',
-              backgroundColor: cor, // Mesma cor do balão estourado
-              clipPath: recorte, // Aplica o formato rasgado
+              backgroundColor: cor,
+              clipPath: recorte,
               animation: `borrachaVoando 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards`,
               // @ts-ignore
               '--tx': `${destinoX}px`,
@@ -94,28 +91,43 @@ export default function JogoBaloes() {
   const [baloes, setBaloes] = useState<{ id: number; letra: string; x: number; cor: string }[]>([]);
   const [pontos, setPontos] = useState(0);
   const [efeitoEstouro, setEfeitoEstouro] = useState<{ x: number; y: number; cor: string; letra: string } | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const audioLetraRef = useRef<HTMLAudioElement | null>(null);
+  const audioPopRef = useRef<HTMLAudioElement | null>(null);
 
-  // Trava de som rigorosa para parar qualquer fala ou som imediatamente
+  // Carrega o som de Pop apontando para a sua nova pasta
+  useEffect(() => {
+    audioPopRef.current = new Audio('/sounds/festadosbaloes/pop-sound.mp3');
+    audioPopRef.current.volume = 0.5; // O som do estouro fica um pouco mais baixo
+  }, []);
+
   const pararSons = useCallback(() => {
     window.speechSynthesis.cancel();
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    if (audioLetraRef.current) {
+      audioLetraRef.current.pause();
+      audioLetraRef.current.currentTime = 0;
     }
   }, []);
 
-  // Ao sair da tela, o som é cortado na hora
   useEffect(() => {
     return () => pararSons();
   }, [pararSons]);
 
-  const tocarSomLetra = (letra: string) => {
+  const tocarFeedbackCompleto = (letra: string) => {
     pararSons();
-    const caminhoAudio = `/sounds/abc/${letra.toLowerCase()}.mp3`;
-    audioRef.current = new Audio(caminhoAudio);
     
-    audioRef.current.play().catch(() => {
+    // 1. Toca o Efeito "Pop"
+    if (audioPopRef.current) {
+      const popClone = audioPopRef.current.cloneNode() as HTMLAudioElement;
+      popClone.volume = 0.4; // Ajuste do volume do pop
+      popClone.play().catch(() => {});
+    }
+
+    // 2. Toca a Voz com a Letra
+    const caminhoAudio = `/sounds/abc/${letra.toLowerCase()}.mp3`;
+    audioLetraRef.current = new Audio(caminhoAudio);
+    
+    audioLetraRef.current.play().catch(() => {
       const msg = new SpeechSynthesisUtterance(letra);
       msg.lang = 'pt-BR';
       msg.rate = 1.0;
@@ -141,14 +153,14 @@ export default function JogoBaloes() {
     const centroX = rect.left + rect.width / 2;
     const centroY = rect.top + rect.height / 2;
     
-    // Dispara a animação com a posição, cor da borracha e a letra
     setEfeitoEstouro({ x: centroX, y: centroY, cor, letra });
-    tocarSomLetra(letra);
+    
+    // Dispara o som duplo (Estouro + Letra)
+    tocarFeedbackCompleto(letra);
     
     setBaloes(prev => prev.filter(b => b.id !== id));
     setPontos(prev => prev + 1);
     
-    // Limpa o efeito após terminar a animação
     setTimeout(() => setEfeitoEstouro(null), 450);
   };
 
@@ -211,23 +223,20 @@ export default function JogoBaloes() {
           100% { transform: translateY(-135vh) rotate(0deg); }
         }
         
-        /* 1. Animação da Nuvem de Ar (Rápida e sutil) */
         @keyframes soproAr {
           0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0.8; }
           100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
         }
 
-        /* 2. Animação da Borracha voando e caindo (Gravidade) */
         @keyframes borrachaVoando {
           0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
-          70% { opacity: 1; } /* Mantém visível por mais tempo no ar */
+          70% { opacity: 1; } 
           100% { 
             transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty) + 80px)) scale(0) rotate(var(--rot)); 
             opacity: 0; 
           }
         }
 
-        /* 3. A letra despenca rapidamente e some */
         @keyframes letraCaindo {
           0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
           100% { transform: translate(-50%, calc(-50% + 60px)) scale(0.4); opacity: 0; }
