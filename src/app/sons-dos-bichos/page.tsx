@@ -2,135 +2,172 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
-const ANIMAIS = [
-  { nome: 'Cachorro', som: 'Au Au!', emoji: '🐶', cor: '#FFD166', msg: 'O cachorro é o melhor amigo!' },
-  { nome: 'Gato', som: 'Miau!', emoji: '🐱', cor: '#40C9FF', msg: 'O gato adora fazer miau!' },
-  { nome: 'Leão', som: 'Roar!', emoji: '🦁', cor: '#FF7B9C', msg: 'O leão é o rei da floresta!' },
-  { nome: 'Vaca', som: 'Muuu!', emoji: '🐮', cor: '#06D6A0', msg: 'A vaca nos dá o leitinho!' },
-  { nome: 'Pintinho', som: 'Piu Piu!', emoji: '🐥', cor: '#FDE047', msg: 'O pintinho é bem amarelinho!' },
-  { nome: 'Macaco', som: 'U u á á!', emoji: '🐵', cor: '#9D4EDD', msg: 'O macaco adora pular e comer banana!' },
+// BANCO DE DADOS - Organizado com seus novos caminhos de pastas
+const LISTA_ANIMAIS = [
+  { 
+    id: 1,
+    nome: 'Cachorro', 
+    foto: '/images/animais/cachorro.png', // Caminho da foto que você subiu
+    cor: '#FFD166',
+    frase: 'O cachorro é o melhor amigo e faz au au!',
+    somReal: '/sounds/animais/cachorro-latido.mp3', // Caminho do som que você subiu
+  },
+  { 
+    id: 2,
+    nome: 'Gato', 
+    foto: '/images/animais/gato.png', 
+    cor: '#40C9FF',
+    frase: 'O gatinho adora um carinho e faz miau!',
+    somReal: '/sounds/animais/gato-miado.mp3', 
+  },
+  { 
+    id: 3,
+    nome: 'Leão', 
+    foto: '/images/animais/leao.png', 
+    cor: '#FF7B9C',
+    frase: 'O leão é o rei da floresta e tem um rugido forte!',
+    somReal: '/sounds/animais/leao-rugido.mp3', 
+  },
+  { 
+    id: 4,
+    nome: 'Vaca', 
+    foto: '/images/animais/vaca.png', 
+    cor: '#06D6A0',
+    frase: 'A vaca nos dá o leitinho e faz muuu!',
+    somReal: '/sounds/animais/vaca-mu.mp3', 
+  },
+  { 
+    id: 5,
+    nome: 'Cavalo', 
+    foto: '/images/animais/cavalo.png', 
+    cor: '#A855F7',
+    frase: 'O cavalo corre rápido e come capim!',
+    somReal: '/sounds/animais/cavalo-relincho.mp3', 
+  },
+  { 
+    id: 6,
+    nome: 'Pintinho', 
+    foto: '/images/animais/pintinho.png', 
+    cor: '#FDE047',
+    frase: 'O pintinho é amarelinho e faz piu piu!',
+    somReal: '/sounds/animais/pintinho-piu.mp3', 
+  }
 ];
 
 export default function SomDosBichos() {
-  const [animalAtivo, setAnimalAtivo] = useState<string | null>(null);
+  const [animalSelecionado, setAnimalSelecionado] = useState<typeof LISTA_ANIMAIS[0] | null>(null);
 
-  const falarAnimal = (animal: typeof ANIMAIS[0]) => {
-    // Cancela falas anteriores
+  const tocarAtividade = (animal: typeof LISTA_ANIMAIS[0]) => {
+    // 1. Limpa qualquer fala anterior
     window.speechSynthesis.cancel();
+    
+    // 2. Abre o Pop-up com a foto
+    setAnimalSelecionado(animal);
 
-    const mensagem = new SpeechSynthesisUtterance(`${animal.nome}! ${animal.som}. ${animal.msg}`);
+    // 3. Toca o Som Real (Cachorro latindo, etc)
+    if (animal.somReal) {
+      const audio = new Audio(animal.somReal);
+      audio.play().catch(e => console.log("Erro ao tocar áudio:", e));
+    }
+
+    // 4. Voz da "professora" explicando sobre o animal
+    const mensagem = new SpeechSynthesisUtterance(animal.frase);
     mensagem.lang = 'pt-BR';
-    mensagem.rate = 0.7; // Velocidade lenta para aprendizado
-    mensagem.pitch = 1.3; // Tom amigável
-
-    setAnimalAtivo(animal.nome);
+    mensagem.rate = 0.7; 
+    mensagem.pitch = 1.4; 
     window.speechSynthesis.speak(mensagem);
-
-    // Remove a animação de destaque após a fala (aproximadamente 4 segundos)
-    setTimeout(() => {
-      setAnimalAtivo(null);
-    }, 4000);
   };
 
   return (
     <div style={{ width: "100%", minHeight: "100vh", backgroundColor: "#F0F9FF", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px", boxSizing: "border-box" }}>
       
-      {/* MENU SUPERIOR */}
-      <div style={{ width: "100%", maxWidth: "1000px", display: "flex", justifyContent: "flex-start", marginBottom: "30px" }}>
+      {/* BOTÃO VOLTAR */}
+      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "30px" }}>
         <Link href="/playground?idade=2-3" style={{ textDecoration: "none", padding: "12px 24px", backgroundColor: "#FFFFFF", border: "4px solid #1E293B", borderRadius: "20px", color: "#1E293B", fontWeight: "900", boxShadow: "4px 4px 0px #1E293B" }}>
           ⬅ VOLTAR
         </Link>
       </div>
 
-      {/* TÍTULO */}
-      <div style={{ textAlign: "center", marginBottom: "50px" }}>
-        <h1 style={{ fontSize: "clamp(32px, 5vw, 48px)", fontWeight: "900", color: "#1E293B", margin: "0 0 10px 0" }}>Som dos Bichos</h1>
-        <p style={{ fontSize: "clamp(18px, 2.5vw, 22px)", color: "#64748B", fontWeight: "700" }}>Toque nos animais para ouvir seus sons mágicos!</p>
+      <div style={{ textAlign: "center", marginBottom: "40px" }}>
+        <h1 style={{ fontSize: "clamp(32px, 5vw, 42px)", fontWeight: "900", color: "#1E293B", margin: "0" }}>Quem sou eu?</h1>
+        <p style={{ fontSize: "18px", color: "#64748B", fontWeight: "700" }}>Toque no animal para ver a foto e ouvir o som!</p>
       </div>
 
-      {/* GRADE DE ANIMAIS RESPONSIVA */}
-      <div style={{ 
-        display: "grid", 
-        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
-        gap: "30px", 
-        width: "100%", 
-        maxWidth: "1100px" 
-      }}>
-        {ANIMAIS.map((animal) => (
+      {/* GRADE DE ANIMAIS (Botões principais) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "25px", width: "100%", maxWidth: "1000px" }}>
+        {LISTA_ANIMAIS.map((animal) => (
           <button
-            key={animal.nome}
-            onClick={() => falarAnimal(animal)}
+            key={animal.id}
+            onClick={() => tocarAtividade(animal)}
             style={{
               backgroundColor: "#FFFFFF",
               border: "4px solid #1E293B",
               borderRadius: "40px",
-              padding: "40px 20px",
+              padding: "30px",
               cursor: "pointer",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              boxShadow: animalAtivo === animal.nome ? "4px 4px 0px #1E293B" : "8px 8px 0px #1E293B",
-              transform: animalAtivo === animal.nome ? "scale(1.05)" : "scale(1)",
-              transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-              outline: "none",
-              position: "relative"
+              boxShadow: "6px 6px 0px #1E293B",
+              transition: "transform 0.2s"
             }}
           >
-            {/* Círculo de Fundo do Animal */}
             <div style={{ 
+              marginBottom: "15px", 
+              backgroundColor: animal.cor, 
               width: "140px", 
               height: "140px", 
-              backgroundColor: animal.cor, 
               borderRadius: "50%", 
-              border: "6px solid #1E293B",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: "20px",
-              fontSize: "80px"
+              display: "flex", 
+              justifyContent: "center", 
+              alignItems: "center", 
+              border: "4px solid #1E293B",
+              overflow: "hidden",
+              position: "relative"
             }}>
-              {animal.emoji}
+              {/* Mostra a foto miniatura no botão */}
+              <Image 
+                src={animal.foto} 
+                alt={animal.nome} 
+                fill 
+                style={{ objectFit: 'cover' }}
+              />
             </div>
-
-            <span style={{ fontSize: "28px", fontWeight: "900", color: "#1E293B", textTransform: "uppercase" }}>
-              {animal.nome}
-            </span>
-            
-            {/* Balão de fala que aparece quando ativo */}
-            {animalAtivo === animal.nome && (
-              <div style={{
-                position: "absolute",
-                top: "-20px",
-                right: "10px",
-                backgroundColor: "#1E293B",
-                color: "#FFFFFF",
-                padding: "10px 20px",
-                borderRadius: "20px",
-                fontWeight: "900",
-                fontSize: "20px",
-                animation: "pop 0.3s forwards"
-              }}>
-                {animal.som}
-              </div>
-            )}
+            <span style={{ fontSize: "22px", fontWeight: "900", color: "#1E293B" }}>{animal.nome.toUpperCase()}</span>
           </button>
         ))}
       </div>
 
-      {/* ESTILOS DE ANIMAÇÃO */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes pop {
-          0% { transform: scale(0.5); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      `}} />
+      {/* JANELA DA FOTO (POP-UP) */}
+      {animalSelecionado && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(30, 41, 59, 0.95)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 100, padding: "15px" }}>
+          <div style={{ backgroundColor: "#FFFFFF", padding: "20px", borderRadius: "40px", border: "6px solid #1E293B", position: "relative", width: "100%", maxWidth: "550px", textAlign: "center" }}>
+            
+            <button 
+              onClick={() => { setAnimalSelecionado(null); window.speechSynthesis.cancel(); }}
+              style={{ position: "absolute", top: "-15px", right: "-15px", width: "50px", height: "50px", backgroundColor: "#FB7185", border: "4px solid #1E293B", borderRadius: "50%", color: "white", fontSize: "24px", fontWeight: "900", cursor: "pointer", boxShadow: "4px 4px 0px #1E293B", zIndex: 101 }}
+            >
+              X
+            </button>
 
-      <div style={{ marginTop: "60px", padding: "20px", backgroundColor: "#E2E8F0", borderRadius: "20px", maxWidth: "600px", textAlign: "center" }}>
-        <p style={{ margin: 0, color: "#475569", fontWeight: "700" }}>
-          Explorar os sons ajuda a criança a desenvolver a fala e o reconhecimento do mundo ao seu redor!
-        </p>
-      </div>
+            {/* FOTO GRANDE DO ANIMAL NO POP-UP */}
+            <div style={{ width: "100%", aspectRatio: "1/1", backgroundColor: "#F1F5F9", borderRadius: "25px", border: "4px solid #E2E8F0", position: "relative", overflow: "hidden", marginBottom: "20px" }}>
+              <Image 
+                src={animalSelecionado.foto} 
+                alt={animalSelecionado.nome} 
+                fill 
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+
+            <h2 style={{ fontSize: "32px", fontWeight: "900", color: "#1E293B", margin: "0 0 10px 0" }}>{animalSelecionado.nome}!</h2>
+            <p style={{ fontSize: "20px", fontWeight: "700", color: "#64748B", margin: 0 }}>{animalSelecionado.frase}</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
