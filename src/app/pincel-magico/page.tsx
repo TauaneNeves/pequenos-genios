@@ -3,19 +3,21 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
+// BANCO DE DADOS - Agora com o caminho para os seus ficheiros mp3
 const CORES_LAPIS = [
-  { nome: 'Vermelho', valor: '#EF4444' },
-  { nome: 'Azul', valor: '#3B82F6' },
-  { nome: 'Verde', valor: '#22C55E' },
-  { nome: 'Amarelo', valor: '#FDE047' },
-  { nome: 'Rosa', valor: '#EC4899' },
-  { nome: 'Roxo', valor: '#A855F7' },
+  { nome: 'Vermelho', valor: '#EF4444', audio: '/sounds/professora/cores/vermelho.mp3' },
+  { nome: 'Azul', valor: '#3B82F6', audio: '/sounds/professora/cores/azul.mp3' },
+  { nome: 'Verde', valor: '#22C55E', audio: '/sounds/professora/cores/verde.mp3' },
+  { nome: 'Amarelo', valor: '#FDE047', audio: '/sounds/professora/cores/amarelo.mp3' },
+  { nome: 'Rosa', valor: '#EC4899', audio: '/sounds/professora/cores/rosa.mp3' },
+  { nome: 'Roxo', valor: '#A855F7', audio: '/sounds/professora/cores/roxo.mp3' },
 ];
 
 export default function PincelMagico() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [corSelecionada, setCorSelecionada] = useState(CORES_LAPIS[0]);
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Referência para controlar o áudio
+  const [corSelecionada, setCorSelecionada] = useState(CORES_LAPIS[1]); // Começa com Azul por exemplo
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
 
@@ -53,16 +55,34 @@ export default function PincelMagico() {
   useEffect(() => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    return () => window.removeEventListener('resize', resizeCanvas);
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (audioRef.current) {
+        audioRef.current.pause(); // Para o som se sair da página
+      }
+    };
   }, [resizeCanvas]);
 
-  const falarCor = (cor: typeof CORES_LAPIS[0]) => {
+  // FUNÇÃO ATUALIZADA: Agora toca o seu ficheiro MP3
+  const selecionarCor = (cor: typeof CORES_LAPIS[0]) => {
+    // Para qualquer áudio ou voz que esteja a tocar
     window.speechSynthesis.cancel();
-    const mensagem = new SpeechSynthesisUtterance(cor.nome);
-    mensagem.lang = 'pt-BR';
-    mensagem.rate = 0.7; 
-    mensagem.pitch = 1.2; 
-    window.speechSynthesis.speak(mensagem);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    // Toca o seu ficheiro de áudio
+    const novoAudio = new Audio(cor.audio);
+    audioRef.current = novoAudio;
+    novoAudio.play().catch(err => {
+      console.log("Erro ao tocar áudio, usando voz de reserva:", err);
+      // Fallback: Se o ficheiro não for encontrado, usa o robô para não ficar sem som
+      const mensagem = new SpeechSynthesisUtterance(cor.nome);
+      mensagem.lang = 'pt-BR';
+      window.speechSynthesis.speak(mensagem);
+    });
+
     setCorSelecionada(cor);
   };
 
@@ -148,7 +168,7 @@ export default function PincelMagico() {
           {CORES_LAPIS.map((lapis) => (
             <button
               key={lapis.nome}
-              onClick={() => falarCor(lapis)}
+              onClick={() => selecionarCor(lapis)}
               style={{
                 backgroundColor: "#FFFFFF",
                 border: corSelecionada.nome === lapis.nome ? "6px solid #1E293B" : "4px solid #E2E8F0",

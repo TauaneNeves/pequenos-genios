@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const ATIVIDADES = [
-  { id: 1, titulo: "Pincel Mágico", idade: "2-3", tags: ["cores"], desc: "Escolha um lápis e pinte livremente na tela!", emoji: "🖌️", blocked: false, link: "/estoura-cores", cor: "#FDE047" },
+  { id: 1, titulo: "Pincel Mágico", idade: "2-3", tags: ["cores"], desc: "Escolha um lápis e pinte livremente na tela!", emoji: "🖌️", blocked: false, link: "/pincel-magico", cor: "#FDE047" },
   { id: 2, titulo: "Som dos Bichos", idade: "2-3", tags: ["sons"], desc: "Aprenda o som de cada animal.", emoji: "🐶", blocked: false, link: "/sons-dos-bichos", cor: "#FB7185" },
   { id: 3, titulo: "Festa dos Balões", idade: "4-5", tags: ["abc"], desc: "Estoure os balões e ouça as letras.", emoji: "🎈", blocked: false, link: "/jogo-baloes", cor: "#38BDF8" },
   { id: 4, titulo: "Contando Maçãs", idade: "4-5", tags: ["numeros"], desc: "Coloque as maçãs na cesta.", emoji: "🍎", blocked: true, cor: "#34D399" },

@@ -11,7 +11,7 @@ const LISTA_ANIMAIS = [
     silabas: [
       { texto: 'Ca', som: 'cá', audioFile: '/sounds/professora/silabas/ca.mp3' }, 
       { texto: 'chor', som: 'xô', audioFile: '/sounds/professora/silabas/cho.mp3' }, 
-      { texto: 'ro', som: 'rro', audioFile: '/sounds/professora/silabas/ro.mp3' }
+      { texto: 'ro', som: 'rro', audioFile: '/sounds/professora/silabas/rro.mp3' }
     ],
     foto: '/images/animais/cachorro.png', 
     cor: '#FFD166', 
