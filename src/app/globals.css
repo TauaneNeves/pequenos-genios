@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Garante que imagens e SVGs não quebrem o layout */
+  img, svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Ajuste para botões e links em telas touch */
+  button, a {
+    touch-action: manipulation;
+  }
+}
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

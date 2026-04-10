@@ -88,7 +88,7 @@ export default function Home() {
       }}>
         
         {/* Categoria: 2-3 anos */}
-        <Link href="/playground" style={{ textDecoration: "none" }}>
+        <Link href="/playground?idade=2-3" style={{ textDecoration: "none" }}>
           <div style={{ backgroundColor: "#FFFFFF", border: "3px solid #1E293B", borderRadius: "30px", padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0px #1E293B", transition: "transform 0.2s", height: "100%" }}>
             <svg width="45" height="45" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: "12px" }}>
               <circle cx="50" cy="50" r="40" fill="#FDE047" stroke="#1E293B" strokeWidth="6"/>
@@ -103,7 +103,7 @@ export default function Home() {
         </Link>
 
         {/* Categoria: 4-5 anos */}
-        <Link href="/playground" style={{ textDecoration: "none" }}>
+        <Link href="/playground?idade=4-5" style={{ textDecoration: "none" }}>
           <div style={{ backgroundColor: "#FFFFFF", border: "3px solid #1E293B", borderRadius: "30px", padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0px #1E293B", transition: "transform 0.2s", height: "100%" }}>
             <svg width="45" height="45" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: "12px" }}>
               <path d="M20 70 L50 20 L80 70 Z" fill="#38BDF8" stroke="#1E293B" strokeWidth="6" strokeLinejoin="round"/>
@@ -115,7 +115,7 @@ export default function Home() {
         </Link>
 
         {/* Categoria: 6 anos */}
-        <Link href="/playground" style={{ textDecoration: "none" }}>
+        <Link href="/playground?idade=6" style={{ textDecoration: "none" }}>
           <div style={{ backgroundColor: "#FFFFFF", border: "3px solid #1E293B", borderRadius: "30px", padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0px #1E293B", transition: "transform 0.2s", height: "100%" }}>
             <svg width="45" height="45" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: "12px" }}>
               <rect x="25" y="25" width="50" height="50" rx="10" fill="#A855F7" stroke="#1E293B" strokeWidth="6"/>
@@ -127,7 +127,7 @@ export default function Home() {
         </Link>
 
         {/* Categoria: 7-8 anos */}
-        <Link href="/playground" style={{ textDecoration: "none" }}>
+        <Link href="/playground?idade=7-8" style={{ textDecoration: "none" }}>
           <div style={{ backgroundColor: "#FFFFFF", border: "3px solid #1E293B", borderRadius: "30px", padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0px #1E293B", transition: "transform 0.2s", height: "100%" }}>
             <svg width="45" height="45" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: "12px" }}>
               <path d="M20 50 L40 20 L80 20 L60 50 L80 80 L40 80 Z" fill="#FB7185" stroke="#1E293B" strokeWidth="6" strokeLinejoin="round"/>
